@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>   
+    <meta charset="utf-8"/>
+    <title>請假單系統</title>
+    <h1>這是{{web_name}}請假單系統</h1>
+    <h2>您好{{username}}，歡迎光臨</h2>
+</head> 
+<body> 
+    <img src="/1111.png">
+    <br>
+    <strong>點此<a href="http://127.0.0.1:5000/">回公司首頁</a></strong> 
+</body>       
+</html>

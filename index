@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>   
+    <meta charset="utf-8"/>
+    <title>company</title>
+    <h1>這是{{web_name}}網站首頁</h1>
+    <h2>您好{{username}}，歡迎光臨</h2>
+</head> 
+<body> 
+    <form action="/show" method="GET">
+        <input type="text" name="n">  
+        <button>點擊</button>
+    <br/>      
+    </form>
+    <form action="/show2" method="GET">
+        <input type="text" name="n">  
+        <button>點擊</button>
+    <br/>      
+    </form>
+    <form action="/show_post" method="POST">
+        <input type="text" name="data">  
+        <button>輸入密碼後點擊</button>
+    <br/>      
+    </form>
+    <strong>點此進入<a href="http://www.google.com/">連結到google</a></strong> 
+    <br/>
+    <strong>點此進入<a href="http://127.0.0.1:5000/page">請假系統</a></strong> 
+</body>       
+</html>
