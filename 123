@@ -24,11 +24,9 @@
         }
 
         .node-point {
-            width: 0;
-            height: 0;
-            border-left: 25px solid transparent;
-            border-right: 25px solid transparent;
-            border-bottom: 50px solid blue; /* 菱形 */
+            width: 50px;
+            height: 40px;
+            background-color: #b0e0e6;
             position: absolute;
             cursor: pointer;
         }
@@ -141,24 +139,24 @@
             });
 
             // 註冊連線類型，並設定箭頭覆蓋物和標籤
-            instance.registerConnectionType("basic", {
-                overlays: [
-                    ["Arrow", { location: 1, width: 10, length: 10, foldback: 0.8 }],
-                    ["Label", { location: 0.5, cssClass: 'connection-label' }],
-                    ["Custom", {
-                        create: function (component) {
-                            return $('<input type="text" class="connection-label" />');
-                        },
-                        location: 0.5,
-                        id: "customOverlay",
-                        events: {
-                            click: function (overlay, component) {
-                                // Custom overlay clicked
-                            }
-                        }
-                    }]
-                ]
-            });
+            //instance.registerConnectionType("basic", {
+            //    overlays: [
+            //        ["Arrow", { location: 1, width: 10, length: 10, foldback: 0.8 }],
+            //        ["Label", { location: 0.5, cssClass: 'connection-label' }],
+            //        ["Custom", {
+            //            create: function (component) {
+            //                return $('<input type="text" class="connection-label" />');
+            //            },
+            //            location: 0.5,
+            //            id: "customOverlay",
+            //            events: {
+            //                click: function (overlay, component) {
+            //                    // Custom overlay clicked
+            //                }
+            //            }
+            //        }]
+            //    ]
+            //});
 
             // 監聽連線事件
             instance.bind("dblclick", function (conn, originalEvent) {
@@ -182,16 +180,32 @@
         // 創建節點
         function createNode(type) {
             var newNode = document.createElement('div');
-            var id = 'node' + nodeCount++;
+            
             var nodeName = "";
-            if (type === 'node') {
-                nodeName = prompt("Enter node name:", "Node");
+            if (type === 'start') {
+                var id = "start";
+                newNode.className = 'endpoint ' + type + '-point';
+                newNode.innerHTML="start";
+                //nodeName : "起始點";
+                newNode.id = id;
             }
-            newNode.className = 'endpoint ' + type + '-point';
-            newNode.innerHTML = type === 'node' ? nodeName : type.charAt(0).toUpperCase() + type.slice(1); // 使用者輸入或預設名稱
-            newNode.id = id;
-            newNode.style.top = '100px';
-            newNode.style.left = (100 + Math.random() * 300) + 'px'; // 隨機初始位置
+            else if (type === 'node') {
+                var id = 'node' + nodeCount++;
+                newNode.className = 'endpoint ' + type + '-point';
+                nodeName = prompt("Enter node name:", "Node");
+                newNode.innerHTML = type === 'node' ? nodeName : type.charAt(0).toUpperCase() + type.slice(1); // 使用者輸入或預設名稱
+                newNode.id = id;
+               // newNode.style.top = '100px';
+                //newNode.style.left = (100 + Math.random() * 300) + 'px'; // 隨機初始位置
+            }
+            else{
+                var id = 'end' ;
+                newNode.className = 'endpoint ' + type + '-point';
+                newNode.innerHTML = "end"
+                nodeName: "結束點";
+                newNode.id = id;
+            }
+            
 
             // 點擊事件創建端點
             newNode.onclick = function (e) {
@@ -226,7 +240,7 @@
                 { isSource: true, isTarget: true });
                 // 監聽端點點擊事件，創建右鍵菜單
                 endpoint.bind('click', function (conn) {
-                    createContextMenu(conn);
+                   // createContextMenu(conn);
                 });
 
                 // 添加文本框作為標籤
@@ -313,7 +327,7 @@
         function exportConnections() {
             var connections = instance.getAllConnections();
             var exportData = connections.map(function (conn) {
-                return { source: conn.sourceId, target: conn.targetId, lineId: "line" + Date.now(), label: conn.id };
+                return { source: conn.sourceId, target: conn.targetId, lineId: conn.getOverlay("label").getLabel(), label: conn.id };
             });
 
             // 顯示 JSON 輸出
