@@ -119,7 +119,7 @@
     <div id="jsonOutput2">JSON output will appear here...</div>
     <!-- 讀取並顯示 JSON 與 XML 資料的按鈕 -->
     <input type="file" id="fileInput" onchange="loadFile(event)">
-    
+
 
     <!-- 刪除元素的右鍵選單 -->
     <div id="contextMenu">
@@ -150,8 +150,16 @@
             instance.bind("connection", function (connInfo, originalEvent) {
                 var conn = connInfo.connection;
                 var lineId = "line" + lineCount++;
-                conn.getOverlay("label").setLabel(lineId);
-                conn.setParameter("lineId", lineId); // 將 LINE_ID 儲存在連線的參數中
+                var labelOverlay = conn.getOverlay("label");
+                if (labelOverlay) {
+                    labelOverlay.setLabel(lineId);
+                    conn.setParameter("lineId", lineId); // 將 LINE_ID 儲存在連線的參數中
+                } else {
+                    // 添加 "label" 覆蓋物
+                    conn.addOverlay(["Label", { label: lineId, id: "label" }]);
+                    conn.setParameter("lineId", lineId); // 將 LINE_ID 儲存在連線的參數中
+                }
+               
             });
 
             // 監聽右鍵事件，防止浏覽器默认右键菜单弹出
@@ -169,7 +177,6 @@
         // 創建節點
         function createNode(type) {
             var newNode = document.createElement('div');
-
             var nodeName = "";
             if (type === 'start') {
                 var id = "start";
@@ -180,7 +187,7 @@
             else if (type === 'node') {
                 var id = 'node' + nodeCount++;
                 newNode.className = 'endpoint ' + type + '-point';
-                nodeName = prompt("Enter node name:", "Node");
+                nodeName = prompt("Enter node name:", id);
                 newNode.innerHTML = type === 'node' ? nodeName : type.charAt(0).toUpperCase() + type.slice(1); // 使用者輸入或預設名稱
                 newNode.id = id;
             }
@@ -193,9 +200,9 @@
             }
 
             // 點擊事件創建端點
-            newNode.onclick = function (e) {
-                if (e.target === newNode && !e.ctrlKey) createEndpoints(id);
-            };
+            //newNode.onclick = function (e) {
+            //    if (e.target === newNode && !e.ctrlKey) createEndpoints(id);
+            //};
 
             // 右鍵事件創建右鍵菜單
             newNode.oncontextmenu = function (e) {
@@ -208,8 +215,9 @@
             // 添加節點到畫布並設置可拖動
             document.getElementById('drawingArea').appendChild(newNode);
             instance.draggable(newNode);
+            createEndpoints(id);
         }
-
+        
         // 創建端點
         function createEndpoints(id) {
             var existingEndpoints = instance.getEndpoints(id);
@@ -224,7 +232,21 @@
                     ],
                 },
                     { isSource: true, isTarget: true });
-
+                console.log("id " + id);
+                const matches = Array.from(document.querySelectorAll('[id^=node]'));
+                console.log("matches : "+matches);
+                if (id = matches) {
+                    var endpoint2 = instance.addEndpoint(id, {
+                        anchor: "BottomCenter", maxConnections: 10,
+                        endpoint2: ["Dot", { radius: 10 }],
+                        connectorOverlays: [
+                            ["Arrow", { width: 10, length: 30, location: 1, id: "arrow2" }],
+                            ["Label", { label: "", id: "label2" }]
+                        ],
+                    },
+                        { isSource: true, isTarget: true });
+                    console.log("endpoint2 " + id);
+                 } 
                 // 監聽端點點擊事件，創建右鍵菜單
                 endpoint.bind('click', function (conn) {
                     // createContextMenu(conn);
@@ -257,7 +279,7 @@
                 };
             }
         }
-
+       
         // 更新連接的標籤
         function updateConnectionLabel(endpoint) {
             var connections = instance.getConnections({ source: endpoint.elementId });
