@@ -8,7 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>jsPlumb Custom Nodes Example</title>
     <!-- 引入 jsPlumb 的預設樣式表 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/css/jsplumbtoolkit-defaults.css" />
+    
     <style>
         /* CSS樣式 */
         .start-point, .end-point {
@@ -27,10 +31,13 @@
         }
 
         .node-point {
-            width: 50px;
-            height: 40px;
-            background-color: #b0e0e6;
             position: absolute;
+            border:1px solid #000000;
+            width: 80px;
+            height: 80px;
+            border-radius:40px;
+            background-color: #b0e0e6;
+            
             cursor: pointer;
         }
 
@@ -127,6 +134,32 @@
             <li onclick="deleteElement()">Delete</li>
         </ul>
     </div>
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+   <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+            <div class="modal-body">
+                <input type="" class="form-control" id="floatingInput" placeholder="Node">
+                <label>
+                    <input type="checkbox" value="yes"> 是
+                    <input type="checkbox" value="no"> 否
+                </label>
+            </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- 引入 jsPlumb 庫 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/js/jsplumb.min.js"></script>
@@ -160,8 +193,8 @@
                     conn.setParameter("lineId", lineId); // 將 LINE_ID 儲存在連線的參數中
                 }
                
-            });
 
+            });
             // 監聽右鍵事件，防止浏覽器默认右键菜单弹出
             instance.bind("contextmenu", function (component, originalEvent) {
                 originalEvent.preventDefault();
@@ -201,7 +234,7 @@
 
             // 點擊事件創建端點
             //newNode.onclick = function (e) {
-            //    if (e.target === newNode && !e.ctrlKey) createEndpoints(id);
+            //   if (e.target === newNode && !e.ctrlKey) createEndpoints(id);
             //};
 
             // 右鍵事件創建右鍵菜單
@@ -248,8 +281,11 @@
                     console.log("endpoint2 " + id);
                  } 
                 // 監聽端點點擊事件，創建右鍵菜單
-                endpoint.bind('click', function (conn) {
+                endpoint.bind('click', function (conn,originalEvent) {
                     // createContextMenu(conn);
+                    if (originalEvent.button === 0 ){
+                        openEditModal(conn)
+                    }
                 });
 
                 // 添加文本框作為標籤
@@ -278,6 +314,10 @@
                     label.focus();
                 };
             }
+        }
+
+        function openEditModal(conn){
+            $('#myModal').modal('show');
         }
        
         // 更新連接的標籤
