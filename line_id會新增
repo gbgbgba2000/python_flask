@@ -155,7 +155,7 @@
                     </label>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="myFunction()">Close</button>
                     <button type="button" class="btn btn-primary">Save changes</button>
                 </div>
             </div>
@@ -206,6 +206,7 @@
             document.addEventListener('click', function (e) {
                 document.getElementById('contextMenu').style.display = 'none';
             }, true);
+         
         }
 
         // 創建節點
@@ -319,6 +320,10 @@
 
         function openEditModal(conn){
             $('#myModal').modal('show');
+        }
+
+        function myFunction() {
+            document.getElementById('myModal').style.display = 'none';
         }
        
         // 更新連接的標籤
