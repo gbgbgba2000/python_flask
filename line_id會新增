@@ -152,7 +152,16 @@
                         選擇節點：
                         <input type="checkbox" value="yes"> 是
                         <input type="checkbox" value="no"> 否
+                        <!-- 新增按鈕 -->
+                        <button type="button" class="btn btn-primary" onclick="addInput()">Add Input</button>
+                        <!-- 初始的輸入框 -->
+                        <div id="inputContainer">
+                            <label for="floatingInput">Enter node name:</label>
+                            <input type="text" class="form-control" id="floatingInput" placeholder="Node">
+                        </div>
                     </label>
+                    
+                   
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="myFunction()">Close</button>
@@ -334,6 +343,30 @@
         function myFunction() {
            // document.getElementById('myModal').style.display = 'none';
            $('#myModal').modal('hide');
+        }
+
+        // 計數器，用於動態生成唯一的輸入框 ID
+        var inputCount = 1;
+
+        // 添加新的輸入框
+        
+        function addInput() {
+            inputCount++;
+            var newInput = document.createElement('div');
+            newInput.innerHTML = `<div id="input${inputCount}Container">
+                                          <label for="input${inputCount}">Additional Input:</label>
+                                          <input type="text" class="form-control" id="input${inputCount}" placeholder="Enter value">
+                                          <button type="button" class="btn btn-danger btn-sm" onclick="deleteInput(${inputCount})">Delete</button>
+                                      </div>`;
+            document.getElementById('inputContainer').appendChild(newInput);
+        }
+
+        // 刪除輸入框
+        function deleteInput(count) {
+            var inputContainer = document.getElementById(`input${count}Container`);
+            if (inputContainer) {
+                inputContainer.remove();
+            }
         }
        
         // 更新連接的標籤
