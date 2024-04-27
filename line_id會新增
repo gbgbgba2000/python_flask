@@ -8,11 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>jsPlumb Custom Nodes Example</title>
     <!-- 引入 jsPlumb 的預設樣式表 -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-            crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/css/jsplumbtoolkit-defaults.css" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/js/jsplumb.min.js"></script>
+    @*<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/css/jsplumbtoolkit-defaults.css" />*@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+   @* <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">*@
     
     <style>
         /* CSS樣式 */
@@ -161,9 +161,9 @@
             </div>
         </div>
     </div>
-
+ 
     <!-- 引入 jsPlumb 庫 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/js/jsplumb.min.js"></script>
+   
     <script>
         var instance; // jsPlumb 實例
         var currentElement = null;  // 當前元素（節點或連線）
@@ -206,6 +206,7 @@
             document.addEventListener('click', function (e) {
                 document.getElementById('contextMenu').style.display = 'none';
             }, true);
+            
          
         }
 
@@ -238,6 +239,13 @@
             //newNode.onclick = function (e) {
             //   if (e.target === newNode && !e.ctrlKey) createEndpoints(id);
             //};
+            newNode.ondblclick= function (e,id) {
+                console.log("newNode:"+id);
+                console.log("e:"+e);
+                //instance.getEndpoints(id);
+                openEditModal(id);
+            }
+          
 
             // 右鍵事件創建右鍵菜單
             newNode.oncontextmenu = function (e) {
@@ -253,6 +261,7 @@
             createEndpoints(id);
         }
         
+
         // 創建端點
         function createEndpoints(id) {
             var existingEndpoints = instance.getEndpoints(id);
@@ -283,10 +292,10 @@
                     console.log("endpoint2 " + id);
                  } 
                 // 監聽端點點擊事件，創建右鍵菜單
-                endpoint.bind('click', function (conn,originalEvent) {
+                endpoint.bind('dbclick', function (conn,originalEvent) {
                     // createContextMenu(conn);
                     if (originalEvent.button === 0 ){
-                        openEditModal(conn)
+                       // openEditModal(conn)
                     }
                 });
 
@@ -318,12 +327,13 @@
             }
         }
 
-        function openEditModal(conn){
+        function openEditModal(id){
             $('#myModal').modal('show');
         }
 
         function myFunction() {
-            document.getElementById('myModal').style.display = 'none';
+           // document.getElementById('myModal').style.display = 'none';
+           $('#myModal').modal('hide');
         }
        
         // 更新連接的標籤
