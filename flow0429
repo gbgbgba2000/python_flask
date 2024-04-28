@@ -1,0 +1,472 @@
+@{
+    ViewData["Title"] = "Flow";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jsPlumb Custom Nodes Example</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.14.6/js/jsplumb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <style>
+        /* CSS樣式 */
+        .start-point, .end-point {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            cursor: pointer;
+        }
+
+        .start-point {
+            background-color: green;
+        }
+
+        .end-point {
+            background-color: red;
+        }
+
+        .node-point {
+            position: absolute;
+            border: 1px solid #000000;
+            width: 80px;
+            height: 80px;
+            border-radius: 40px;
+            background-color: #b0e0e6;
+            cursor: pointer;
+        }
+
+        .output {
+            margin-top: 600px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre;
+        }
+
+        #contextMenu {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background-color: white;
+            border: 1px solid black;
+            padding: 5px;
+        }
+
+            #contextMenu ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+
+                #contextMenu ul li {
+                    padding: 5px;
+                    cursor: pointer;
+                }
+
+                    #contextMenu ul li:hover {
+                        background-color: #ddd;
+                    }
+
+        .custom-label {
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 2px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+
+        .connection-label {
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 2px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+
+        .jsplumb-connector {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .jsplumb-connector-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid black;
+            padding: 2px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <button onclick="createNode('start')">Create Start Point</button>
+        <button onclick="createNode('node')">Create Node</button>
+        <button onclick="createNode('end')">Create End Point</button>
+    </div>
+    <div id="drawingArea" style="height:500px; position:relative;"></div>
+    <button onclick="exportConnections()">Export Connections</button>
+    <div id="jsonOutput">JSON output will appear here...</div>
+    <div id="xmlOutput">XML output will appear here...</div>
+    <div id="jsonOutput2">JSON output will appear here...</div>
+    <input type="file" id="fileInput" onchange="loadFile(event)">
+    <div id="contextMenu">
+        <ul>
+            <li onclick="deleteElement()">Delete</li>
+        </ul>
+    </div>
+    <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label for="floatingInput">Enter node name:</label>
+                    <input type="text" class="form-control" id="floatingInput" placeholder="Node">
+                    <label>
+                        選擇節點：
+                        <input type="checkbox" value="yes"> 是
+                        <input type="checkbox" value="no"> 否
+                        <!-- 新增按鈕 -->
+                        <button type="button" class="btn btn-primary" onclick="addInput()">Add Input</button>
+                        <!-- 初始的輸入框 -->
+                        <div id="inputContainer">
+                            <!-- 初始的輸入框 -->
+                            <label for="floatingInput">Enter node name:</label>
+                            <input type="text" class="form-control" id="floatingInput" placeholder="Node">
+                        </div>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="myFunction()">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveChanges()">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var instance;
+        var currentElement = null;
+        var nodeCount = 1;
+        var lineCount = 1;
+
+        function setupJsPlumb() {
+            instance = jsPlumb.getInstance({
+                DragOptions: { cursor: 'pointer', zIndex: 2000 },
+                Container: "drawingArea",
+                Connector: ["Flowchart", { curviness: 50, stub: [40, 60], cornerRadius: 5, alwaysRespectStubs: true }],
+                Anchors: ["Left", "Right", "Top"]
+            });
+
+            instance.bind("connection", function (connInfo, originalEvent) {
+                var conn = connInfo.connection;
+                var lineId = "line" + lineCount++;
+                var labelOverlay = conn.getOverlay("label");
+                if (labelOverlay) {
+                    labelOverlay.setLabel(lineId);
+                    conn.setParameter("lineId", lineId);
+                } else {
+                    conn.addOverlay(["Label", { label: lineId, id: "label" }]);
+                    conn.setParameter("lineId", lineId);
+                }
+            });
+
+            instance.bind("contextmenu", function (component, originalEvent) {
+                originalEvent.preventDefault();
+                return false;
+            });
+
+            document.addEventListener('click', function (e) {
+                document.getElementById('contextMenu').style.display = 'none';
+            }, true);
+        }
+
+        function createNode(type) {
+            var newNode = document.createElement('div');
+            var nodeName = "";
+            var pk_id="PK"+Date.now;
+            if (type === 'start') {
+                var id = "start";
+                newNode.className = 'endpoint ' + type + '-point';
+                newNode.innerHTML = "start";
+                newNode.id = id;
+            }
+            else if (type === 'node') {
+                var id = 'node' + nodeCount++;
+                newNode.className = 'endpoint ' + type + '-point';
+                nodeName = prompt("Enter node name:", id);
+                newNode.innerHTML = type === 'node' ? nodeName : type.charAt(0).toUpperCase() + type.slice(1);
+                newNode.id = id;
+            }
+            else {
+                var id = 'end';
+                newNode.className = 'endpoint ' + type + '-point';
+                newNode.innerHTML = "end"
+                nodeName: "結束點";
+                newNode.id = id;
+            }
+
+            // 點擊事件創建端點
+            //newNode.onclick = function (e) {
+            //   if (e.target === newNode && !e.ctrlKey) createEndpoints(id);
+            //};
+            //newNode.ondblclick = function (e, id) {
+            //    console.log("newNode:" + id);
+            //    console.log("e:" + e);
+            //    //instance.getEndpoints(id);
+            //    openEditModal(id);
+            //}
+
+
+            // 右鍵事件創建右鍵菜單
+            newNode.oncontextmenu = function (e) {
+                e.preventDefault();
+                currentElement = newNode;
+                showContextMenu(e.pageX, e.pageY);
+                return false;
+            };
+
+            document.getElementById('drawingArea').appendChild(newNode);
+            instance.draggable(newNode);
+            createEndpoints(id);
+        }
+
+        function createEndpoints(id) {
+            var existingEndpoints = instance.getEndpoints(id);
+            if (!existingEndpoints || existingEndpoints.length === 0) {
+                var endpoint = instance.addEndpoint(id, {
+                    anchor: "Continuous", maxConnections: 10,
+                    endpoint: ["Dot", { radius: 10 }],
+                    connectorOverlays: [
+                        ["Arrow", { width: 10, length: 30, location: 1, id: "arrow" }],
+                        ["Label", { label: "", id: "label" }]
+                    ],
+                },
+                    { isSource: true, isTarget: true });
+
+                const matches = Array.from(document.querySelectorAll('[id^=node]'));
+                console.log("matches : " + matches);
+                if (id = matches) {
+                    var endpoint2 = instance.addEndpoint(id, {
+                        anchor: "BottomCenter", maxConnections: 10,
+                        endpoint2: ["Dot", { radius: 10 }],
+                        connectorOverlays: [
+                            ["Arrow", { width: 10, length: 30, location: 1, id: "arrow2" }],
+                            ["Label", { label: "", id: "label2" }]
+                        ],
+                    },
+                        { isSource: true, isTarget: true });
+                    console.log("endpoint2 " + id);
+                }
+                // 監聽端點點擊事件，創建右鍵菜單
+                endpoint.bind('dbclick', function (conn, originalEvent) {
+                    // createContextMenu(conn);
+                    if (originalEvent.button === 0) {
+                        // openEditModal(conn)
+                    }
+                });
+
+                var label = document.createElement('input');
+                label.type = 'text';
+                label.className = 'custom-label';
+                label.style.display = 'none';
+                label.onblur = function () {
+                    endpoint.setLabel(this.value);
+                    this.style.display = 'none';
+                    updateConnectionLabel(endpoint);
+                };
+                label.onkeypress = function (e) {
+                    if (e.keyCode === 13) {
+                        endpoint.setLabel(this.value);
+                        this.style.display = 'none';
+                        updateConnectionLabel(endpoint);
+                    }
+                };
+                endpoint.canvas.appendChild(label);
+
+                endpoint.canvas.ondblclick = function () {
+                    label.value = endpoint.getLabel();
+                    label.style.display = 'block';
+                    label.focus();
+                };
+            }
+        }
+
+        function openEditModal(id) {
+            $('#myModal').modal('show');
+        }
+
+        function myFunction() {
+            $('#myModal').modal('hide');
+        }
+
+        $(document).ready(function() {
+    $(document).on("click", "[id^='node']", function() {
+        var clickedId = $(this).attr('id');
+        console.log("Clicked element ID: " + clickedId);
+        // 在這裡放入你想要執行的程式碼，並使用 clickedId 來操作
+    });
+});
+
+        // 計數器，用於動態生成唯一的輸入框 ID
+        var inputCount = 1;
+
+
+        function addInput() {
+            inputCount++;
+            var newInput = document.createElement('div');
+            var inputId = `input${inputCount}`;
+            newInput.innerHTML = `<div id="${inputId}Container">
+                                                  <label for="${inputId}">Additional Input:</label>
+                                                  <input type="text" class="form-control" id="${inputId}" placeholder="Enter value">
+                                                  <button type="button" class="btn btn-danger btn-sm" onclick="deleteInput('${inputId}')">Delete</button>
+                                              </div>`;
+            document.getElementById('inputContainer').appendChild(newInput);
+        }
+
+        function deleteInput(id) {
+            var inputContainer = document.getElementById(`${id}Container`);
+            if (inputContainer) {
+                inputContainer.remove();
+            }
+        }
+
+        function saveChanges() {
+            var connections = instance.getAllConnections();
+            var exportData = connections.map(function (conn) {
+                return { source: conn.sourceId, target: conn.targetId, lineId: conn.getParameter("lineId"), label: conn.id };
+            });
+
+            var inputs = document.querySelectorAll('#inputContainer input[type="text"]');
+            inputs.forEach(function (input) {
+                var inputValue = input.value;
+                exportData.push({ inputValue: inputValue });
+            });
+
+            document.getElementById('jsonOutput').innerText = 'JSON:\n' + JSON.stringify(exportData, null, 4);
+
+            var xmlStr = '<connections>\n';
+            exportData.forEach(function (conn) {
+                xmlStr += '  <connection>\n';
+                xmlStr += '    <source>' + conn.source + '</source>\n';
+                xmlStr += '    <target>' + conn.target + '</target>\n';
+                xmlStr += '    <Line_ID>' + conn.lineId + '</Line_ID>\n';
+                xmlStr += '    <label>' + conn.label + '</label>\n';
+                if (conn.inputValue) {
+                    xmlStr += '    <inputValue>' + conn.inputValue + '</inputValue>\n';
+                }
+                xmlStr += '  </connection>\n';
+            });
+            xmlStr += '</connections>';
+            document.getElementById('xmlOutput').innerText = 'XML:\n' + xmlStr;
+
+            $('#myModal').modal('hide');
+        }
+
+        function updateConnectionLabel(endpoint) {
+            var connections = instance.getConnections({ source: endpoint.elementId });
+            connections.forEach(function (conn) {
+                var labelOverlay = conn.getOverlay("label");
+                if (labelOverlay) {
+                    labelOverlay.setLabel(endpoint.getLabel());
+                }
+            });
+        }
+
+        function createContextMenu(element) {
+            var menu = document.getElementById('contextMenu');
+            menu.style.top = element.canvas.offsetTop + 'px';
+            menu.style.left = element.canvas.offsetLeft + 'px';
+            menu.style.display = 'block';
+            currentElement = element;
+        }
+
+        function setupContextMenu(element, connection) {
+            element.oncontextmenu = function (e) {
+                e.preventDefault();
+                currentElement = connection || this;
+                showContextMenu(e.pageX, e.pageY);
+                return false;
+            };
+        }
+
+        function showContextMenu(x, y) {
+            var menu = document.getElementById('contextMenu');
+            menu.style.top = y + 'px';
+            menu.style.left = x + 'px';
+            menu.style.display = 'block';
+        }
+
+        function deleteElement() {
+            if (currentElement) {
+                if (currentElement instanceof jsPlumb.Connection) {
+                    instance.deleteConnection(currentElement);
+                } else {
+                    instance.removeAllEndpoints(currentElement.id);
+                    document.getElementById('drawingArea').removeChild(currentElement);
+                }
+                currentElement = null;
+            }
+            document.getElementById('contextMenu').style.display = 'none';
+        }
+
+        function exportConnections() {
+            var connections = instance.getAllConnections();
+            var exportData = connections.map(function (conn) {
+                return { source: conn.sourceId, target: conn.targetId, lineId: conn.getParameter("lineId"), label: conn.id };
+            });
+
+            var inputs = document.querySelectorAll('#inputContainer input[type="text"]');
+            inputs.forEach(function (input) {
+                var inputValue = input.value;
+                exportData.push({ inputValue: inputValue });
+            });
+
+            document.getElementById('jsonOutput').innerText = 'JSON:\n' + JSON.stringify(exportData, null, 4);
+
+            var xmlStr = '<connections>\n';
+            exportData.forEach(function (conn) {
+                xmlStr += '  <connection>\n';
+                xmlStr += '    <source>' + conn.source + '</source>\n';
+                xmlStr += '    <target>' + conn.target + '</target>\n';
+                xmlStr += '    <Line_ID>' + conn.lineId + '</Line_ID>\n';
+                xmlStr += '    <label>' + conn.label + '</label>\n';
+                if (conn.inputValue) {
+                    xmlStr += '    <inputValue>' + conn.inputValue + '</inputValue>\n';
+                }
+                xmlStr += '  </connection>\n';
+            });
+            xmlStr += '</connections>';
+            document.getElementById('xmlOutput').innerText = 'XML:\n' + xmlStr;
+        }
+
+        function loadFile(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const content = event.target.result;
+                document.getElementById('jsonOutput2').innerText = content;
+            };
+            reader.readAsText(file);
+        }
+
+        jsPlumb.ready(function () {
+            setupJsPlumb();
+        });
+
+    </script>
+</body>
+</html>
